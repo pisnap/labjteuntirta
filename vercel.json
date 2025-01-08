@@ -6,7 +6,7 @@
             "runtime": "vercel-php@0.6.0"
         }
     },
-    "route": [
+    "routes": [
         {
             "src": "/(css|js)/(.*)",
             "dest": "/public/$1/$2/$3"

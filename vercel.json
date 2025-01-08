@@ -6,14 +6,14 @@
             "runtime": "vercel-php@0.6.0"
         }
     },
-    "routes": [
+    "rewrites": [
         {
-            "src": "/(.*)",
-            "dest": "/api/index.php"
+            "source": "/(css|js)/(.*)",
+            "destination": "/public/$1/$2/$3"
         },
         {
-            "src": "/(css|js)/(.*)",
-            "dest": "public/$1/$2/$3"
+            "source": "/(.*)",
+            "destination": "/api/index.php"
         },
         {
             "src": "/(favicon\\.png|logolab\\.png)",

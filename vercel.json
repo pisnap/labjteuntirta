@@ -34,6 +34,12 @@
         "VIEW_COMPILED_PATH": "/tmp",
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "cookie"
+        "SESSION_DRIVER": "cookie",
+        "DB_CONNECTION": "mysql",
+        "DB_HOST": "mxaac.h.filess.io",
+        "DB_PORT": "3307",
+        "DB_DATABASE": "ElectroLabDatabase_rubberear",
+        "DB_USERNAME": "ElectroLabDatabase_rubberear",
+        "DB_PASSWORD": "8721cf5c6181579cee1ecff48612eb41e2225505"
     }
 }

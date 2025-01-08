@@ -16,8 +16,8 @@
             "destination": "/api/index.php"
         },
         {
-            "src": "/(favicon\\.png|logolab\\.png)",
-            "dest": "public"
+            "source": "/(favicon\\.png|logolab\\.png)",
+            "destination": "public"
         }
     ],
     "env": {

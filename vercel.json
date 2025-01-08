@@ -16,13 +16,13 @@
             "dest": "/api/index.php"
         },
         {
-            "src": "/(favicon\\.png|logolab\\.png)",
-            "dest": "public"
+            "src": "/(logolab\\.png)",
+            "dest": "/public"
         }
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "false",
+        "APP_DEBUG": "true",
         "APP_URL": "https://labjteuntirta-one.vercel.app",
         "ASSET_URL": "https://labjteuntirta-one.vercel.app",
         "APP_KEY": "base64:4JK3BaocIvGYGkKtrT1rM/q3bDZtHTMO6VNZ+YLyb2U=",

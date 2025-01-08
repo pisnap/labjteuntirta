@@ -23,8 +23,8 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
-        "APP_URL": "https://labjteuntirta.vercel.app",
-        "ASSET_URL": "https://labjteuntirta.vercel.app",
+        "APP_URL": "https://labjteuntirta-one.vercel.app",
+        "ASSET_URL": "https://labjteuntirta-one.vercel.app",
         "APP_KEY": "base64:4JK3BaocIvGYGkKtrT1rM/q3bDZtHTMO6VNZ+YLyb2U=",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",

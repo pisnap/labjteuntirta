@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->profile(EditProfile::class)
-            ->brandName('ELECTRO LAB UNTRITA')
+            ->brandName('LAB ELEKTRO UNTIRTA')
             ->favicon(asset('/logolab.png'))
             ->breadcrumbs(false)
             ->id('admin')

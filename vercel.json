@@ -6,18 +6,18 @@
             "runtime": "vercel-php@0.6.0"
         }
     },
-    "rewrites": [
+    "route": [
         {
-            "source": "/(css|js)/(.*)",
-            "destination": "/public/$1/$2/$3"
+            "src": "/(css|js)/(.*)",
+            "dest": "/public/$1/$2/$3"
         },
         {
-            "source": "/(.*)",
-            "destination": "/api/index.php"
+            "src": "/(.*)",
+            "dest": "/api/index.php"
         },
         {
-            "source": "/(favicon\\.png|logolab\\.png)",
-            "destination": "public"
+            "src": "/(favicon\\.png|logolab\\.png)",
+            "dest": "public"
         }
     ],
     "env": {

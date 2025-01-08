@@ -2,24 +2,24 @@
 
 namespace App\Filament\Pages\Auth;
 
-use Filament\Forms\Form;
+use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
+use DanHarrin\LivewireRateLimiting\WithRateLimiting;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
-use Filament\Pages\SimplePage;
 use Filament\Actions\ActionGroup;
-use Illuminate\Support\HtmlString;
-use Illuminate\Support\Facades\Blade;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
-use Illuminate\Contracts\Support\Htmlable;
-use Filament\Models\Contracts\FilamentUser;
-use Illuminate\Validation\ValidationException;
-use DanHarrin\LivewireRateLimiting\WithRateLimiting;
-use Filament\Pages\Concerns\InteractsWithFormActions;
+use Filament\Forms\Form;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
-use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\InteractsWithFormActions;
+use Filament\Pages\SimplePage;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 
 /**
  * @property Form $form
@@ -29,8 +29,14 @@ class Login extends SimplePage
     use InteractsWithFormActions;
     use WithRateLimiting;
 
+    /**
+     * @var view-string
+     */
     protected static string $view = 'filament-panels::pages.auth.login';
 
+    /**
+     * @var array<string, mixed> | null
+     */
     public ?array $data = [];
 
     public function mount(): void
@@ -47,13 +53,24 @@ class Login extends SimplePage
         try {
             $this->rateLimit(5);
         } catch (TooManyRequestsException $exception) {
-            $this->getRateLimitedNotification($exception)?->send();
+            Notification::make()
+                ->title(__('filament-panels::pages/auth/login.notifications.throttled.title', [
+                    'seconds' => $exception->secondsUntilAvailable,
+                    'minutes' => ceil($exception->secondsUntilAvailable / 60),
+                ]))
+                ->body(array_key_exists('body', __('filament-panels::pages/auth/login.notifications.throttled') ?: []) ? __('filament-panels::pages/auth/login.notifications.throttled.body', [
+                    'seconds' => $exception->secondsUntilAvailable,
+                    'minutes' => ceil($exception->secondsUntilAvailable / 60),
+                ]) : null)
+                ->danger()
+                ->send();
+
             return null;
         }
 
         $data = $this->form->getState();
 
-        if (! $this->attemptCaseSensitiveLogin($data)) {
+        if (! Filament::auth()->attempt($this->getCredentialsFromFormData($data), $data['remember'] ?? false)) {
             $this->throwFailureValidationException();
         }
 
@@ -64,6 +81,7 @@ class Login extends SimplePage
             (! $user->canAccessPanel(Filament::getCurrentPanel()))
         ) {
             Filament::auth()->logout();
+
             $this->throwFailureValidationException();
         }
 
@@ -72,53 +90,10 @@ class Login extends SimplePage
         return app(LoginResponse::class);
     }
 
-    protected function attemptCaseSensitiveLogin(array $data): bool
-    {
-        $credentials = $this->getCredentialsFromFormData($data);
-        $login_type = key($credentials);
-        $login_value = $credentials[$login_type];
-
-        // Menggunakan whereRaw untuk pencarian case-sensitive
-        $user = \App\Models\User::whereRaw("BINARY $login_type = ?", [$login_value])->first();
-
-        // Jika user ditemukan dan password valid
-        if ($user && \Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
-            Filament::auth()->login($user, $data['remember'] ?? false);
-            return true;
-        }
-
-        return false;
-    }
-
-
-    protected function getCredentialsFromFormData(array $data): array
-    {
-        $login_type = is_numeric($data['login']) ? 'nim' : 'username';
-
-        return [
-            $login_type => $data['login'],
-            'password' => $data['password'],
-        ];
-    }
-
-    protected function getRateLimitedNotification(TooManyRequestsException $exception): ?Notification
-    {
-        return Notification::make()
-            ->title(__('filament-panels::pages/auth/login.notifications.throttled.title', [
-                'seconds' => $exception->secondsUntilAvailable,
-                'minutes' => $exception->minutesUntilAvailable,
-            ]))
-            ->body(array_key_exists('body', __('filament-panels::pages/auth/login.notifications.throttled') ?: []) ? __('filament-panels::pages/auth/login.notifications.throttled.body', [
-                'seconds' => $exception->secondsUntilAvailable,
-                'minutes' => $exception->minutesUntilAvailable,
-            ]) : null)
-            ->danger();
-    }
-
     protected function throwFailureValidationException(): never
     {
         throw ValidationException::withMessages([
-            'data.login' => __('Invalid NIM or Username, or Password.'),
+            'data.login' => __('filament-panels::pages/auth/login.messages.failed'),
         ]);
     }
 
@@ -127,6 +102,9 @@ class Login extends SimplePage
         return $form;
     }
 
+    /**
+     * @return array<int | string, string | Form>
+     */
     protected function getForms(): array
     {
         return [
@@ -158,9 +136,10 @@ class Login extends SimplePage
     protected function getPasswordFormComponent(): Component
     {
         return TextInput::make('password')
-            ->label(__('Password'))
+            ->label(__('filament-panels::pages/auth/login.form.password.label'))
+            ->hint(filament()->hasPasswordReset() ? new HtmlString(Blade::render('<x-filament::link :href="filament()->getRequestPasswordResetUrl()"> {{ __(\'filament-panels::pages/auth/login.actions.request_password_reset.label\') }}</x-filament::link>')) : null)
             ->password()
-            ->revealable(true)
+            ->revealable(filament()->arePasswordsRevealable())
             ->autocomplete('current-password')
             ->required()
             ->extraInputAttributes(['tabindex' => 2]);
@@ -169,20 +148,60 @@ class Login extends SimplePage
     protected function getRememberFormComponent(): Component
     {
         return Checkbox::make('remember')
-            ->label(__('Remember Me'));
+            ->label(__('filament-panels::pages/auth/login.form.remember.label'));
+    }
+
+    public function registerAction(): Action
+    {
+        return Action::make('register')
+            ->link()
+            ->label(__('filament-panels::pages/auth/login.actions.register.label'))
+            ->url(filament()->getRegistrationUrl());
+    }
+
+    public function getTitle(): string | Htmlable
+    {
+        return __('filament-panels::pages/auth/login.title');
+    }
+
+    public function getHeading(): string | Htmlable
+    {
+        return __('filament-panels::pages/auth/login.heading');
+    }
+
+    /**
+     * @return array<Action | ActionGroup>
+     */
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getAuthenticateFormAction(),
+        ];
     }
 
     protected function getAuthenticateFormAction(): Action
     {
         return Action::make('authenticate')
-            ->label('Login')
+            ->label(__('filament-panels::pages/auth/login.form.actions.authenticate.label'))
             ->submit('authenticate');
     }
 
-    protected function getFormActions(): array
+    protected function hasFullWidthFormActions(): bool
     {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function getCredentialsFromFormData(array $data): array
+    {
+        $login_type = is_numeric($data['login']) ? 'nim' : 'username';
+
         return [
-            $this->getAuthenticateFormAction(),
+            $login_type => $data['login'],
+            'password' => $data['password'],
         ];
     }
 }
